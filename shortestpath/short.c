@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Data structures
 
@@ -168,6 +169,18 @@ struct path *add_stop (int **weights, struct path *path, int from, int to) {
     return new_path;
 }
 
+// Detects if a given path has a cycle involving the last added element
+bool has_cycle (struct path *path) {
+    int last_stop = path->elems[path->numelems - 1];
+    int i;
+    for (i = 0; i < path->numelems - 1; i++) {
+        printf ("last: %d, considering: %d\n", last_stop, path->elems[i]);
+        if (last_stop == path->elems[i])
+            return true;
+    }
+    return false;
+}
+
 // Initializes a path cache
 struct path **init_path_cache (int num_nodes) {
     struct path **cache = malloc (num_nodes * sizeof (struct path *));
@@ -189,6 +202,8 @@ struct path *find_shortest_ (int **weights, struct path **cache, struct node **g
         cache[id1] = stub;
         return stub;
     }
+
+    // If the path passed to us is a cycl
     
     //struct node *start = get_node (graph, id1);
     struct node *end = get_node (graph, id2);
@@ -217,8 +232,20 @@ struct path *find_shortest_ (int **weights, struct path **cache, struct node **g
     if (min == 65535)
         return no_path ();
 
+
     // Add us to the cache and return
     struct path *our_shortest = add_stop (weights, cache[minpath], minpath, id2);
+
+    // If we've cycled (only happens if there's a negative cycle) then print out
+    // that we have a negative cycle and the path that has it
+    // Might not terminate if we do... Hmm...
+    if (has_cycle (our_shortest)) {
+        printf ("======== We have a cycle =======\n");
+        print_path (our_shortest);
+        printf("================\n");
+    }
+
+    // Add us to the cache
     cache[id2] = our_shortest;
     return our_shortest;
 }
